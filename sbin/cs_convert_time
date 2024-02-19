@@ -1,0 +1,53 @@
+#!/bin/bash
+#
+# cs_convert_time
+#
+# (c) 2011-2017 SUSE Linux GmbH, Germany.
+# (c) 2018-2019 SUSE LLC
+# Author: L.Pinne.
+# GNU General Public License v2. No warranty.
+# http://www.gnu.org/licenses/gpl.html
+#
+# Version: 2019-12-05
+#
+# shellcheck disable=SC2068
+
+function help(){
+	local script_name
+	script_name=$(basename "$0")
+	echo "${script_name}: convert time values between wall time and seconds since Epoch format."
+	echo
+	echo "usage: $script_name time_value"
+	echo "usage: $script_name [OPTION]"
+	echo
+	echo "OPTION:"
+	echo "--help		show this message"
+	echo "--version	print version number and exit"
+}
+
+function convert_time(){
+	if [[ $# -gt 1 ]]; then
+		date -d "$*" +%s
+	else
+		date -d @"$1"
+	fi
+}
+
+if [[ $# -eq 0 ]]; then
+	help
+	exit 1
+fi
+
+case $1 in
+	-v|--version)
+		ver_string=$(grep "^# Version:" "$0" | cut -c3-)
+		echo -e "$(basename "$0") $ver_string"
+	;;
+	-h|--help)
+		help
+	;;
+	*)
+		convert_time $@
+	;;
+esac
+#

@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# cs_delcib
+#
+# (c) 2011-2017 SUSE Linux GmbH, Germany.
+# (c) 2018-2019 SUSE LLC
+# Author: L.Pinne.
+# GNU General Public License v2. No warranty.
+# http://www.gnu.org/licenses/gpl.html
+#
+# Version: SLES12 0.2 2019-12-05
+#
+# shellcheck disable=SC1090
+
+EXE="$0"
+ERR="/dev/null"
+
+CFG="/etc/ClusterTools2/cs_delcib"
+test -s $CFG && source $CFG
+
+# TODO check current paths
+test -z "${FIL}" &&\
+	FIL="
+/var/lib/corosync/*
+/var/lib/heartbeat/cores/*/*
+/var/lib/heartbeat/crm/*
+/var/lib/pengine/*
+/var/lib/pacemaker/cib/*
+/var/lib/pacemaker/pengine/*
+"
+
+test -z "${BAK}" &&\
+	BAK="/var/adm/backup/cib.xml-$(date +%Y%m%d-%H%M%S)"
+
+
+function clear_cib(){
+	local CIB_HBT="/var/lib/heartbeat/crm/cib.xml"
+	local CIB_PCM="/var/lib/pacemaker/cib/cib.xml"
+	( mv $CIB_HBT "$BAK" 2>$ERR &&\
+		 echo "Moved $CIB_HBT to $BAK" >/dev/stderr) ||\
+	( mv $CIB_PCM "$BAK" 2>$ERR &&\
+		 echo "Moved $CIB_PCM to $BAK" >/dev/stderr)
+	for f in $FIL; do
+		rm -f "$f"
+	done
+}
+
+
+# main()
+
+case $1 in
+	-v|--version)
+		echo -n "$(basename "$EXE") "
+		head -11 "$EXE" | grep "^# Version: "
+		exit
+	;;
+	-f|--force)
+		# 12sp1...
+		/usr/bin/systemctl stop pacemaker || exit
+		clear_cib
+		exit
+	;;
+	-o|--offline)
+		# 12sp1...
+		if /usr/bin/systemctl is-active pacemaker 2>/dev/null 2>&1; then
+			echo "Pacemaker is active, exiting."
+			exit
+		fi
+		clear_cib
+		exit
+	;;
+	*)
+		echo "usage: $(basename "$EXE") [OPTION]"
+		echo
+		echo " --offline	remove CIB and PE logs"
+		echo " --force	stop cluster service and resources, remove CIB and PE logs"
+		echo " --help		show help"
+		echo " --version	show version"
+		exit
+	;;
+esac
+#

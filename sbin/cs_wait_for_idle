@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# cs_wait_for_idle 
+#
+# (c) 2021 SUSE LLC
+# Author: L.Pinne.
+# GNU General Public License v2. No warranty.
+# http://www.gnu.org/licenses/gpl.html
+#
+# Version: 2021-07-14
+#
+
+EXE="$0"
+SEC=${2:-5}
+
+
+function help() {
+        echo "usage:    $(basename "$EXE") --sleep <seconds>"
+        echo "usage:    $(basename "$EXE") [ --help | --version ]"
+        echo
+        echo "OPTION:"
+        echo " --help		show help"
+        echo " --version	show version info"
+	echo " --sleep <seconds>	loop every <seconds>" 
+}
+
+
+# main()
+
+case $1 in
+	-v|--version)
+		echo -n "$(basename "$EXE") "
+		head -11 "$EXE" | grep "^# Version: "
+ 		exit
+	;;
+	-s|--sleep)	# TODO cmdline parsing
+		sleep "$SEC"
+		while ! ( cs_clusterstate -i | grep "Cluster state: S_IDLE" ); do
+			sleep "$SEC";
+		done
+	;;
+	*)
+		help
+		exit
+	;;
+esac
+#
